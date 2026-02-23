@@ -7,3 +7,5 @@ tunnel.log
 __pycache__/
 *.pyc
 .git_push.lock
+*.log
+!logs/
