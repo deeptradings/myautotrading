@@ -2,3 +2,4 @@
 push.log
 *.log
 !logs/.gitkeep
+.telegram_state
