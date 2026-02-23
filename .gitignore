@@ -8,3 +8,4 @@ webhook.log
 tunnel.log
 __pycache__/
 *.pyc
+.git_push.lock
