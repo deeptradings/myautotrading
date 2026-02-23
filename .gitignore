@@ -3,3 +3,8 @@ push.log
 *.log
 !logs/.gitkeep
 .telegram_state
+.tunnel_pid
+webhook.log
+tunnel.log
+__pycache__/
+*.pyc
