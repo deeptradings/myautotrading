@@ -307,7 +307,7 @@ curl -X POST http://localhost:8080/ \
 ## 📞 Support
 
 - **Issues**: [GitHub Issues](https://github.com/deeptradings/autotrading/issues)
-- **Telegram**: @lance_aibot
+- **Telegram**: @jimmy_tt18
 
 ---
 
