@@ -8,6 +8,10 @@ REPO_DIR="/root/.openclaw/workspace/trading-logs"
 
 cd "$REPO_DIR"
 
+# Step 1: Fetch new Telegram messages first
+echo "[$(date -Iseconds)] Fetching Telegram messages..."
+bash "$REPO_DIR/fetch-telegram.sh" 2>&1 | tee -a "$REPO_DIR/push.log"
+
 # Load token from .env file
 if [ -f "$REPO_DIR/.env" ]; then
     export GITHUB_TOKEN=$(grep GITHUB_TOKEN "$REPO_DIR/.env" | cut -d'=' -f2)
