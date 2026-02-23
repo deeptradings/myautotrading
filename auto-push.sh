@@ -29,7 +29,7 @@ if [ -z "$GITHUB_TOKEN" ]; then
     exit 0
 fi
 
-REMOTE_URL="https://${GITHUB_TOKEN}@github.com/deeptradings/autotrading.git"
+REMOTE_URL="https://${GITHUB_TOKEN}@github.com/deeptradings/myautotrading.git"
 
 # Check if there are any changes
 if ! git diff --quiet || ! git diff --cached --quiet; then
