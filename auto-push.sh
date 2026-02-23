@@ -44,6 +44,6 @@ git remote set-url origin "$REMOTE_URL"
 
 # Push changes
 echo "[$(date -Iseconds)] Pushing to GitHub..."
-git push origin main
+git push origin main 2>&1 | tee -a "$REPO_DIR/push.log"
 
 echo "[$(date -Iseconds)] Sync complete"
