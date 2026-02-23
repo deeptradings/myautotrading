@@ -1,9 +1,10 @@
 [2026-02-23T03:55:00+00:00] OPEN  BTC/USDT  LONG  @ 52340.5  qty: 0.1  leverage: 10x  order_id: 12345
 [2026-02-23T04:12:00+00:00] CLOSE BTC/USDT  LONG  @ 52580.0  qty: 0.1  pnl: +23.95 USDT  order_id: 12346
-[2026-02-23T13:35:46] TELEGRAM 🧪 Webhook 测试消息
+[2026-02-23T13:35:46] 🧪 Webhook 测试消息
 
 OPEN BTC/USDT LONG @ 52340.5 qty: 0.1
 时间：2026-02-23T13:31:59 08:00
 [2026-02-23T13:52:53.133101] OPEN BTC/USDT LONG @ 52340.5 qty: 0.1 order_id: test123
 # Raw: {"action": "open", "symbol": "BTC/USDT", "side": "long", "price": 52340.5, "quantity": 0.1, "order_id": "test123"}
-
+[2026-02-23 03:55:00] OPEN CROSS BTCUSDT  LONG  Entry: 52340.5  qty: 0.1  leverage: 10x  magin:1200 
+[2026-02-23 04:12:00] CLOSE CROSS  ETHUSDT  SHORT  Exit 52580.0  qty: 0.1  pnl: +23.95 USDT
