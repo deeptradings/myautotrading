@@ -124,14 +124,23 @@ class CommandHandler:
         """Generate and send PDF report"""
         time_range = args[0] if args else "1h"
         
-        # Trigger news monitor to generate PDF
+        # Trigger news monitor to generate PDF via webhook command
         try:
-            monitor_script = SCRIPT_DIR.parent / "crypto-news-monitor" / "crypto_news_monitor.py"
-            if monitor_script.exists():
-                subprocess.run(["python3", str(monitor_script)], timeout=60)
+            hours = int(time_range.replace('h', '')) if 'h' in time_range else 1
+            
+            # Request PDF via webhook
+            webhook_url = "http://localhost:9900/command"
+            response = requests.post(
+                webhook_url,
+                json={"command": "get_recent_pdf", "hours": hours},
+                timeout=30
+            )
+            result = response.json()
+            
+            if result.get('status') == 'ok':
                 return f"✅ PDF 报告已生成并发送到 Telegram"
             else:
-                return "❌ 新闻监控脚本未找到"
+                return f"❌ 生成失败：{result.get('message', '未知错误')}"
         except Exception as e:
             return f"❌ 生成失败：{e}"
     
