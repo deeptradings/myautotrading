@@ -6,52 +6,93 @@
 
 ```
 trading-logs/
-├── logs/              # 交易日志文件
-│   └── YYYY-MM-DD.log # 按日期分割的日志
-├── auto-push.sh       # 自动推送脚本
-├── .env               # 环境变量（含 GitHub Token，已 gitignore）
-└── README.md          # 本文件
+├── logs/                  # 交易日志文件
+│   ├── YYYY-MM-DD.log     # 按日期分割的日志
+│   └── .gitkeep           # 目录占位
+├── auto-push.sh           # 自动推送脚本（含 Telegram 获取）
+├── fetch-telegram.sh      # Telegram 消息获取脚本
+├── setup-remote.sh        # GitHub 远程配置脚本
+├── .env                   # 环境变量（已 gitignore）
+├── .env.example           # 环境变量示例
+├── .telegram_state        # Telegram 消息偏移量（已 gitignore）
+├── push.log               # 推送日志（已 gitignore）
+└── README.md              # 本文件
 ```
+
+## 🤖 自动化流程
+
+```
+系统 Crontab (每分钟)
+    ↓
+fetch-telegram.sh → 从 Telegram 获取新消息
+    ↓
+解析交易信息 → 写入 logs/YYYY-MM-DD.log
+    ↓
+auto-push.sh → Git commit & push
+    ↓
+GitHub 仓库留痕
+```
+
+**全程零大模型调用**，纯系统级自动化。
 
 ## 📝 日志格式示例
 
 ```
-[2026-02-23T03:55:00+00:00] OPEN  BTC/USDT  LONG  @ 52340.5  qty: 0.1  leverage: 10x  order_id: 12345
-[2026-02-23T04:12:00+00:00] CLOSE BTC/USDT  LONG  @ 52580.0  qty: 0.1  pnl: +23.95 USDT  order_id: 12346
+[2026-02-23T03:55:00+00:00] TELEGRAM 🔔 新开仓通知 品种：BTC/USDT 方向：LONG ...
+[2026-02-23T04:12:00+00:00] TELEGRAM 🔔 平仓通知 品种：BTC/USDT 方向：LONG ...
 ```
 
-## 🤖 自动化
+## 🔧 配置说明
 
-- **推送频率**: 每分钟检查一次
-- **触发条件**: 本地仓库有新内容时自动 push
-- **Cron 任务**: 已配置，无需手动干预
+### 环境变量
 
-## 🔧 首次配置
-
-运行 setup 脚本配置 Token：
+`.env` 文件包含以下配置：
 
 ```bash
-cd /root/.openclaw/workspace/trading-logs
-./setup-remote.sh
+GITHUB_TOKEN=ghp_xxx
+TELEGRAM_BOT_TOKEN=1234567890:ABCdef...
+TELEGRAM_CHAT_ID=5708394864
 ```
 
-按提示输入你的 GitHub Token。
+### 消息解析
+
+当前脚本将 Telegram 消息原文写入日志。如需结构化解析，可修改 `fetch-telegram.sh` 中的解析逻辑。
 
 ## 📊 验证
 
-查看推送历史：
 ```bash
+# 查看推送历史
 cd /root/.openclaw/workspace/trading-logs
 git log --oneline
-```
 
-查看推送日志：
-```bash
-tail -f /root/.openclaw/workspace/trading-logs/push.log
+# 查看推送日志
+tail -f push.log
+
+# 查看 Telegram 获取状态
+cat .telegram_state
+
+# 查看今日日志
+cat logs/$(date +%Y-%m-%d).log
 ```
 
 ## 🔐 安全提示
 
-- Token 存储在 `.env` 文件中，已加入 `.gitignore`
-- 不要将 `.env` 文件提交到仓库
-- 如需更换 Token，重新运行 `setup-remote.sh`
+- `.env` 和 `.telegram_state` 已加入 `.gitignore`，不会泄露
+- Token 存储在本地，仅脚本可读（权限 600）
+- 如需更换 Token，直接编辑 `.env` 文件
+- 定期在 GitHub 检查推送记录，确保正常同步
+
+## 🆘 故障排查
+
+```bash
+# 手动运行一次完整流程
+cd /root/.openclaw/workspace/trading-logs
+bash fetch-telegram.sh
+bash auto-push.sh
+
+# 查看错误日志
+tail -50 push.log
+
+# 检查 Cron 任务
+crontab -l | grep trading-logs
+```
