@@ -629,7 +629,7 @@ curl -X POST http://localhost:8080/ \
 ## 📞 支持
 
 - **问题反馈**: [GitHub Issues](https://github.com/deeptradings/autotrading/issues)
-- **Telegram**: @lance_aibot
+- **Telegram**: @jimmy_tt18
 
 ---
 
