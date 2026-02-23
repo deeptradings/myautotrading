@@ -16,28 +16,7 @@
 
 ## 📋 Overview
 
-This repository provides a **direct webhook endpoint** that receives trading notifications from your trading system and automatically syncs them to GitHub for evidence verification (留痕验证).
-
-## 🤖 Architecture
-
-```mermaid
-graph TD
-    A[Trading System] --> B[Telegram Group]
-    A --> C[Webhook Endpoint]
-    C --> D[Log Files]
-    D --> E[Auto Git Commit]
-    E --> F[GitHub Repository]
-    
-    style C fill:#90EE90
-    style D fill:#87CEEB
-    style E fill:#FFD700
-    style F fill:#DDA0DD
-```
-
-**Two parallel branches from Trading System:**
-
-1. **Telegram Group** → Manual monitoring and alerts
-2. **Webhook Endpoint** → Automated logging and GitHub sync
+This repository logs trading notifications from my OpenClaw autotrading system and automatically syncs them to GitHub for evidence verification (留痕验证).
 
 ## 🚀 How It Works
 
