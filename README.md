@@ -318,28 +318,7 @@ curl -X POST http://localhost:8080/ \
 
 ## 📋 系统概述
 
-本仓库提供**直接 webhook 端点**，从交易系统接收交易通知并自动同步到 GitHub，用于交易留痕验证。
-
-## 🤖 系统架构
-
-```mermaid
-graph TD
-    A[交易系统] --> B[Telegram 群组]
-    A --> C[Webhook 端点]
-    C --> D[日志文件]
-    D --> E[自动 Git 提交]
-    E --> F[GitHub 仓库]
-    
-    style C fill:#90EE90
-    style D fill:#87CEEB
-    style E fill:#FFD700
-    style F fill:#DDA0DD
-```
-
-**交易系统的两个并行分支：**
-
-1. **Telegram 群组** → 人工监控和告警
-2. **Webhook 端点** → 自动化日志和 GitHub 同步
+本仓库记录我的 OpenClaw 自动交易系统的交易通知，并自动同步到 GitHub，用于交易留痕验证。
 
 ## 🚀 工作流程
 
