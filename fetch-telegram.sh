@@ -30,7 +30,8 @@ if [ -f "$STATE_FILE" ]; then
 fi
 
 # Fetch updates from Telegram Bot API
-RESPONSE=$(curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates?offset=${OFFSET}&chat_id=${TELEGRAM_CHAT_ID}")
+# Note: For groups, we need to fetch all updates and filter by chat_id
+RESPONSE=$(curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates?offset=${OFFSET}&limit=10")
 
 # Extract updates
 UPDATES=$(echo "$RESPONSE" | jq -r '.result[]?')
@@ -41,11 +42,16 @@ if [ -z "$UPDATES" ]; then
 fi
 
 # Process each update
-NEW_OFFSET=$OFFSET
 echo "$UPDATES" | while read -r update; do
     UPDATE_ID=$(echo "$update" | jq -r '.update_id')
+    CHAT_ID=$(echo "$update" | jq -r '.message.chat.id // empty')
     MESSAGE_TEXT=$(echo "$update" | jq -r '.message.text // empty')
     MESSAGE_DATE=$(echo "$update" | jq -r '.message.date // 0')
+    
+    # Skip if not from our target chat
+    if [ "$CHAT_ID" != "$TELEGRAM_CHAT_ID" ]; then
+        continue
+    fi
     
     if [ -z "$MESSAGE_TEXT" ]; then
         continue
@@ -66,7 +72,7 @@ echo "$UPDATES" | while read -r update; do
     NEW_OFFSET=$((UPDATE_ID + 1))
     echo "$NEW_OFFSET" > "$STATE_FILE"
     
-    echo "[$(date -Iseconds)] Processed message $UPDATE_ID"
+    echo "[$(date -Iseconds)] Processed message $UPDATE_ID from chat $CHAT_ID"
 done
 
 # Update offset for next run
