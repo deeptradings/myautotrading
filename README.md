@@ -4,7 +4,7 @@
 
 **Automated trading logs for evidence verification**
 
-[🇨🇳 切换到中文](#trading-logs-自动化留痕系统) | [📊 View on GitHub](https://github.com/deeptradings/autotrading)
+[🇨🇳 切换到中文](#trading-logs---自动化留痕系统) | [📊 View on GitHub](https://github.com/deeptradings/autotrading)
 
 ![Status](https://img.shields.io/badge/status-active-success)
 ![License](https://img.shields.io/badge/license-MIT-blue)
@@ -595,6 +595,6 @@ curl -X POST http://localhost:8080/ \
 
 **为透明交易留痕而建 ❤️**
 
-[⬆ 返回顶部](#trading-logs---自动化留痕系统)
+[⬆ 返回顶部](#trading-logs--自动化留痕系统)
 
 </div>
