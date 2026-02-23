@@ -16,49 +16,95 @@
 
 ## 📋 Overview
 
-This repository automatically captures trading notifications from Telegram and syncs them to GitHub for evidence verification (留痕验证).
+This repository provides a **direct webhook endpoint** that receives trading notifications from your trading system and automatically syncs them to GitHub for evidence verification (留痕验证).
 
-## 🤖 How It Works
+## 🤖 Architecture
 
 ```mermaid
-graph LR
+graph TD
     A[Trading System] --> B[Telegram Group]
-    B --> C[Telegram Webhook]
-    C --> D[Webhook Server]
-    D --> E[Log Files]
-    E --> F[Auto Git Commit]
-    F --> G[GitHub Repository]
+    A --> C[Webhook Endpoint]
+    C --> D[Log Files]
+    D --> E[Auto Git Commit]
+    E --> F[GitHub Repository]
+    
+    style C fill:#90EE90
+    style D fill:#87CEEB
+    style E fill:#FFD700
+    style F fill:#DDA0DD
 ```
 
-1. **Trading notifications** are sent to Telegram group `Aibotlogs`
-2. **Webhook server** captures messages in real-time
-3. **Logs** are written to `logs/YYYY-MM-DD.log`
-4. **Auto commit & push** to GitHub for permanent evidence
+**Two parallel branches from Trading System:**
+
+1. **Telegram Group** → Manual monitoring and alerts
+2. **Webhook Endpoint** → Automated logging and GitHub sync
+
+## 🚀 How It Works
+
+```
+┌─────────────────┐
+│ Trading System  │
+└────────┬────────┘
+         │
+    ┌────┴────┐
+    │         │
+    ▼         ▼
+┌─────────┐ ┌──────────────────┐
+│Telegram │ │ Webhook Endpoint │
+│  Group  │ │  (Python Server) │
+└─────────┘ └────────┬─────────┘
+                     │
+                     ▼
+              ┌──────────────┐
+              │  Log Files   │
+              │YYYY-MM-DD.log│
+              └──────┬───────┘
+                     │
+                     ▼
+              ┌──────────────┐
+              │Auto Git Push │
+              └──────┬───────┘
+                     │
+                     ▼
+              ┌──────────────┐
+              │   GitHub     │
+              │  Repository  │
+              └──────────────┘
+```
+
+### Flow Steps
+
+1. **Trading System** sends webhook to your endpoint on every trade
+2. **Webhook Server** receives and validates the payload
+3. **Log Entry** is written to daily log file (`logs/YYYY-MM-DD.log`)
+4. **Auto Commit** stages changes and commits with timestamp
+5. **Auto Push** syncs to GitHub for permanent evidence
 
 ## 📁 Directory Structure
 
 ```
 trading-logs/
-├── logs/                  # Daily trading logs
-│   └── YYYY-MM-DD.log     # Log files by date
-├── webhook-server.py      # Telegram webhook server
-├── auto-push.sh           # Git auto-push script
-├── setup-webhook.sh       # Webhook setup script
-├── keep-tunnel-alive.sh   # Tunnel keepalive script
-├── .env                   # Environment variables (gitignored)
-└── README.md              # This file
+├── logs/                      # Daily trading logs
+│   └── YYYY-MM-DD.log         # Log files by date
+├── trading-webhook.py         # Webhook endpoint server
+├── auto-push.sh               # Git auto-push script
+├── setup-webhook.sh           # Legacy Telegram setup (optional)
+├── .env                       # Environment variables (gitignored)
+├── .env.example               # Example environment file
+└── README.md                  # This file
 ```
 
 ## 📝 Log Format Example
 
 ```log
-[2026-02-23T13:35:46+08:00] TELEGRAM 🧪 Webhook Test Message
+[2026-02-23T13:35:46.123456] OPEN BTC/USDT LONG @ 52340.5 qty: 0.1 order_id: 12345
+# Raw: {"action": "open", "symbol": "BTC/USDT", "side": "long", "price": 52340.5, ...}
 
-OPEN BTC/USDT LONG @ 52340.5 qty: 0.1
-Time: 2026-02-23T13:31:59+08:00
+[2026-02-23T14:12:33.654321] CLOSE BTC/USDT LONG @ 52580.0 qty: 0.1 pnl: +23.95 USDT order_id: 12346
+# Raw: {"action": "close", "symbol": "BTC/USDT", "side": "long", "price": 52580.0, "pnl": 23.95, ...}
 ```
 
-## 🚀 Quick Start
+## 🔧 Setup Guide
 
 ### 1. Clone Repository
 
@@ -69,8 +115,6 @@ cd autotrading
 
 ### 2. Configure Environment
 
-Create `.env` file:
-
 ```bash
 cp .env.example .env
 ```
@@ -78,45 +122,110 @@ cp .env.example .env
 Edit `.env`:
 
 ```bash
+# GitHub Configuration
 GITHUB_TOKEN=ghp_xxx
-TELEGRAM_BOT_TOKEN=1234567890:ABCdef...
-TELEGRAM_CHAT_ID=-1003784966844
+
+# Webhook Configuration
+WEBHOOK_PORT=8080
+WEBHOOK_SECRET=your_secure_secret_token
+
+# Telegram Configuration (optional)
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
 ```
 
-### 3. Setup Webhook
+### 3. Start Webhook Server
 
 ```bash
-# Start webhook server
-systemctl start telegram-webhook
+# Reload systemd
+systemctl daemon-reload
 
-# Configure HTTPS tunnel and Telegram webhook
-./setup-webhook.sh
+# Enable and start service
+systemctl enable trading-webhook
+systemctl start trading-webhook
+
+# Check status
+systemctl status trading-webhook
 ```
 
-### 4. Test
+### 4. Configure Trading System
 
-Send a message to Telegram group `Aibotlogs`, then check:
-- `logs/YYYY-MM-DD.log` - Log file
-- `webhook.log` - Webhook server log
-- GitHub commits - Auto-push records
+Set your trading system's webhook endpoint:
 
-## 🔧 Components
+```
+URL: http://<your-server-ip>:8080/
+Method: POST
+Content-Type: application/json
+Secret Token: your_secure_secret_token (optional, for signature)
+```
 
-| Component | Description |
-|-----------|-------------|
-| **webhook-server.py** | Python HTTP server receiving Telegram webhooks (port 8080) |
-| **setup-webhook.sh** | Configures localtunnel HTTPS tunnel and Telegram webhook |
-| **keep-tunnel-alive.sh** | Keeps tunnel connection alive with auto-reconnect |
-| **auto-push.sh** | Auto git commit and push to GitHub |
+**Example webhook payload:**
+
+```json
+{
+  "action": "open",
+  "symbol": "BTC/USDT",
+  "side": "long",
+  "price": 52340.5,
+  "quantity": 0.1,
+  "order_id": "12345",
+  "timestamp": "2026-02-23T13:35:46Z"
+}
+```
+
+### 5. Test Webhook
+
+```bash
+# Test health endpoint
+curl http://localhost:8080/health
+
+# Test status endpoint
+curl http://localhost:8080/status
+
+# Send test webhook
+curl -X POST http://localhost:8080/ \
+  -H "Content-Type: application/json" \
+  -d '{"action":"test","symbol":"BTC/USDT","side":"long","price":50000}'
+```
+
+## 🔌 API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | POST | Webhook receiver |
+| `/health` | GET | Health check |
+| `/status` | GET | Server status with git info |
+
+### Webhook Payload Format
+
+The server accepts any JSON payload. Common fields:
+
+```json
+{
+  "action": "open|close|modify|cancel",
+  "symbol": "BTC/USDT",
+  "side": "long|short|buy|sell",
+  "price": 52340.5,
+  "quantity": 0.1,
+  "order_id": "12345",
+  "pnl": 23.95,
+  "timestamp": "2026-02-23T13:35:46Z"
+}
+```
+
+### Signature Verification (Optional)
+
+If `WEBHOOK_SECRET` is configured, include signature header:
+
+```
+X-Webhook-Signature: sha256=<hmac_signature>
+```
 
 ## 📊 Verification Commands
 
 ```bash
-# Check webhook status
-curl -s "https://api.telegram.org/botTOKEN/getWebhookInfo" | jq .
-
 # Check service status
-systemctl status telegram-webhook
+systemctl status trading-webhook
 
 # View today's logs
 cat logs/$(date +%Y-%m-%d).log
@@ -125,29 +234,55 @@ cat logs/$(date +%Y-%m-%d).log
 tail -f webhook.log
 
 # View git history
+cd /root/.openclaw/workspace/trading-logs
 git log --oneline
+
+# Test endpoints
+curl http://localhost:8080/health
+curl http://localhost:8080/status
 ```
 
 ## 🔐 Security
 
-- `.env` file is gitignored (never commit tokens)
-- Token permissions: 600 (owner read/write only)
-- Webhook uses HTTPS encryption (localtunnel)
-- Regular GitHub sync verification recommended
+- **`.env` file** is gitignored (never commit tokens)
+- **Token permissions**: 600 (owner read/write only)
+- **Signature verification**: HMAC-SHA256 (optional)
+- **Concurrent push protection**: File lock prevents race conditions
+- **HTTPS**: Use reverse proxy (nginx) for production
+
+### Production Deployment
+
+For production, use HTTPS with nginx:
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name your-domain.com;
+    
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+    
+    location / {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
 
 ## ⚠️ Important Notes
 
-1. **Bot Privacy Mode**: Must be disabled via @BotFather → Bot Settings → Group Privacy → Turn off
-2. **Re-add Required**: After privacy change, bot must be removed and re-added to group
-3. **Bot Messages Excluded**: Bot's own messages don't trigger webhook (Telegram design)
-4. **localtunnel URL Changes**: Each restart generates new URL, re-run `setup-webhook.sh`
-5. **Zero LLM Calls**: Pure system-level automation, no AI/LLM usage
+1. **Webhook URL**: Configure your trading system to send to `http://<server-ip>:8080/`
+2. **Signature**: Use `WEBHOOK_SECRET` for payload verification (recommended)
+3. **Git Remote**: Ensure git remote is configured for auto-push
+4. **Zero LLM Calls**: Pure system-level automation, no AI/LLM usage
+5. **Dual Branch**: Telegram group is optional for manual monitoring
 
 ## 🆘 Troubleshooting
 
 ```bash
-# Check webhook server
-systemctl status telegram-webhook
+# Check service
+systemctl status trading-webhook
 
 # View recent errors
 tail -50 webhook.log
@@ -155,11 +290,18 @@ tail -50 webhook.log
 # Test health endpoint
 curl http://localhost:8080/health
 
-# Check tunnel status
-cat .tunnel_pid 2>/dev/null && ps aux | grep lt
+# Check git configuration
+cd /root/.openclaw/workspace/trading-logs
+git remote -v
+git status
 
-# Reconfigure webhook
-./setup-webhook.sh
+# Restart service
+systemctl restart trading-webhook
+
+# Manual test
+curl -X POST http://localhost:8080/ \
+  -H "Content-Type: application/json" \
+  -d '{"action":"test"}'
 ```
 
 ## 📞 Support
@@ -183,7 +325,7 @@ cat .tunnel_pid 2>/dev/null && ps aux | grep lt
 
 <div align="center">
 
-**自动化捕获交易通知并同步到 GitHub 进行留痕验证**
+**直接接收交易 webhook 并自动同步到 GitHub 进行留痕验证**
 
 [🇺🇸 Switch to English](#trading-logs---automated-evidence-system) | [📊 查看 GitHub 仓库](https://github.com/deeptradings/autotrading)
 
@@ -197,49 +339,94 @@ cat .tunnel_pid 2>/dev/null && ps aux | grep lt
 
 ## 📋 系统概述
 
-本仓库自动从 Telegram 捕获交易通知并同步到 GitHub，用于交易留痕验证。
+本仓库提供**直接 webhook 端点**，从交易系统接收交易通知并自动同步到 GitHub，用于交易留痕验证。
 
-## 🤖 工作原理
+## 🤖 系统架构
 
 ```mermaid
-graph LR
+graph TD
     A[交易系统] --> B[Telegram 群组]
-    B --> C[Telegram Webhook]
-    C --> D[Webhook 服务器]
-    D --> E[日志文件]
-    E --> F[自动 Git 提交]
-    F --> G[GitHub 仓库]
+    A --> C[Webhook 端点]
+    C --> D[日志文件]
+    D --> E[自动 Git 提交]
+    E --> F[GitHub 仓库]
+    
+    style C fill:#90EE90
+    style D fill:#87CEEB
+    style E fill:#FFD700
+    style F fill:#DDA0DD
 ```
 
-1. **交易通知** 发送到 Telegram 群组 `Aibotlogs`
-2. **Webhook 服务器** 实时捕获消息
-3. **日志** 写入 `logs/YYYY-MM-DD.log`
-4. **自动提交并推送** 到 GitHub 永久留痕
+**交易系统的两个并行分支：**
+
+1. **Telegram 群组** → 人工监控和告警
+2. **Webhook 端点** → 自动化日志和 GitHub 同步
+
+## 🚀 工作流程
+
+```
+┌─────────────────┐
+│    交易系统     │
+└────────┬────────┘
+         │
+    ┌────┴────┐
+    │         │
+    ▼         ▼
+┌─────────┐ ┌──────────────────┐
+│Telegram │ │ Webhook 端点      │
+│  群组   │ │  (Python 服务器)  │
+└─────────┘ └────────┬─────────┘
+                     │
+                     ▼
+              ┌──────────────┐
+              │   日志文件   │
+              │YYYY-MM-DD.log│
+              └──────┬───────┘
+                     │
+                     ▼
+              ┌──────────────┐
+              │ 自动 Git 提交 │
+              └──────┬───────┘
+                     │
+                     ▼
+              ┌──────────────┐
+              │  GitHub 仓库 │
+              └──────────────┘
+```
+
+### 流程步骤
+
+1. **交易系统** 在每次交易时发送 webhook 到端点
+2. **Webhook 服务器** 接收并验证 payload
+3. **日志条目** 写入每日日志文件 (`logs/YYYY-MM-DD.log`)
+4. **自动提交** 暂存更改并用时间戳提交
+5. **自动推送** 同步到 GitHub 永久留痕
 
 ## 📁 目录结构
 
 ```
 trading-logs/
-├── logs/                  # 每日交易日志
-│   └── YYYY-MM-DD.log     # 按日期分割的日志文件
-├── webhook-server.py      # Telegram Webhook 服务器
-├── auto-push.sh           # Git 自动推送脚本
-├── setup-webhook.sh       # Webhook 配置脚本
-├── keep-tunnel-alive.sh   # 隧道保活脚本
-├── .env                   # 环境变量（已 gitignore）
-└── README.md              # 本文件
+├── logs/                      # 每日交易日志
+│   └── YYYY-MM-DD.log         # 按日期分割的日志文件
+├── trading-webhook.py         # Webhook 端点服务器
+├── auto-push.sh               # Git 自动推送脚本
+├── setup-webhook.sh           # 旧版 Telegram 配置（可选）
+├── .env                       # 环境变量（已 gitignore）
+├── .env.example               # 环境变量示例
+└── README.md                  # 本文件
 ```
 
 ## 📝 日志格式示例
 
 ```log
-[2026-02-23T13:35:46+08:00] TELEGRAM 🧪 Webhook 测试消息
+[2026-02-23T13:35:46.123456] OPEN BTC/USDT LONG @ 52340.5 qty: 0.1 order_id: 12345
+# Raw: {"action": "open", "symbol": "BTC/USDT", "side": "long", "price": 52340.5, ...}
 
-OPEN BTC/USDT LONG @ 52340.5 qty: 0.1
-时间：2026-02-23T13:31:59+08:00
+[2026-02-23T14:12:33.654321] CLOSE BTC/USDT LONG @ 52580.0 qty: 0.1 pnl: +23.95 USDT order_id: 12346
+# Raw: {"action": "close", "symbol": "BTC/USDT", "side": "long", "price": 52580.0, "pnl": 23.95, ...}
 ```
 
-## 🚀 快速开始
+## 🔧 配置指南
 
 ### 1. 克隆仓库
 
@@ -250,8 +437,6 @@ cd autotrading
 
 ### 2. 配置环境变量
 
-创建 `.env` 文件：
-
 ```bash
 cp .env.example .env
 ```
@@ -259,45 +444,110 @@ cp .env.example .env
 编辑 `.env`：
 
 ```bash
+# GitHub 配置
 GITHUB_TOKEN=ghp_xxx
-TELEGRAM_BOT_TOKEN=1234567890:ABCdef...
-TELEGRAM_CHAT_ID=-1003784966844
+
+# Webhook 配置
+WEBHOOK_PORT=8080
+WEBHOOK_SECRET=your_secure_secret_token
+
+# Telegram 配置（可选）
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
 ```
 
-### 3. 设置 Webhook
+### 3. 启动 Webhook 服务器
 
 ```bash
-# 启动 Webhook 服务器
-systemctl start telegram-webhook
+# 重载 systemd
+systemctl daemon-reload
 
-# 配置 HTTPS 隧道和 Telegram Webhook
-./setup-webhook.sh
+# 启用并启动服务
+systemctl enable trading-webhook
+systemctl start trading-webhook
+
+# 检查状态
+systemctl status trading-webhook
 ```
 
-### 4. 测试
+### 4. 配置交易系统
 
-向 Telegram 群组 `Aibotlogs` 发送消息，然后检查：
-- `logs/YYYY-MM-DD.log` - 日志文件
-- `webhook.log` - Webhook 服务器日志
-- GitHub 提交记录 - 自动推送记录
+设置交易系统的 webhook 端点：
 
-## 🔧 组件说明
+```
+URL: http://<your-server-ip>:8080/
+Method: POST
+Content-Type: application/json
+Secret Token: your_secure_secret_token（可选，用于签名）
+```
 
-| 组件 | 说明 |
-|------|------|
-| **webhook-server.py** | Python HTTP 服务器，接收 Telegram Webhook 推送（端口 8080） |
-| **setup-webhook.sh** | 配置 localtunnel HTTPS 隧道和 Telegram Webhook |
-| **keep-tunnel-alive.sh** | 保持隧道连接，自动重连 |
-| **auto-push.sh** | 自动 Git 提交并推送到 GitHub |
+**Webhook payload 示例：**
+
+```json
+{
+  "action": "open",
+  "symbol": "BTC/USDT",
+  "side": "long",
+  "price": 52340.5,
+  "quantity": 0.1,
+  "order_id": "12345",
+  "timestamp": "2026-02-23T13:35:46Z"
+}
+```
+
+### 5. 测试 Webhook
+
+```bash
+# 测试健康检查端点
+curl http://localhost:8080/health
+
+# 测试状态端点
+curl http://localhost:8080/status
+
+# 发送测试 webhook
+curl -X POST http://localhost:8080/ \
+  -H "Content-Type: application/json" \
+  -d '{"action":"test","symbol":"BTC/USDT","side":"long","price":50000}'
+```
+
+## 🔌 API 端点
+
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/` | POST | Webhook 接收器 |
+| `/health` | GET | 健康检查 |
+| `/status` | GET | 服务器状态（含 git 信息） |
+
+### Webhook Payload 格式
+
+服务器接受任何 JSON payload。常用字段：
+
+```json
+{
+  "action": "open|close|modify|cancel",
+  "symbol": "BTC/USDT",
+  "side": "long|short|buy|sell",
+  "price": 52340.5,
+  "quantity": 0.1,
+  "order_id": "12345",
+  "pnl": 23.95,
+  "timestamp": "2026-02-23T13:35:46Z"
+}
+```
+
+### 签名验证（可选）
+
+如果配置了 `WEBHOOK_SECRET`，包含签名头：
+
+```
+X-Webhook-Signature: sha256=<hmac_signature>
+```
 
 ## 📊 验证命令
 
 ```bash
-# 检查 Webhook 状态
-curl -s "https://api.telegram.org/botTOKEN/getWebhookInfo" | jq .
-
 # 检查服务状态
-systemctl status telegram-webhook
+systemctl status trading-webhook
 
 # 查看今日日志
 cat logs/$(date +%Y-%m-%d).log
@@ -306,29 +556,55 @@ cat logs/$(date +%Y-%m-%d).log
 tail -f webhook.log
 
 # 查看 Git 历史
+cd /root/.openclaw/workspace/trading-logs
 git log --oneline
+
+# 测试端点
+curl http://localhost:8080/health
+curl http://localhost:8080/status
 ```
 
 ## 🔐 安全提示
 
-- `.env` 文件已加入 gitignore（切勿提交 Token）
-- Token 权限：600（仅所有者可读写）
-- Webhook 使用 HTTPS 加密（localtunnel）
-- 建议定期检查 GitHub 同步状态
+- **`.env` 文件** 已加入 gitignore（切勿提交 Token）
+- **Token 权限**：600（仅所有者可读写）
+- **签名验证**：HMAC-SHA256（可选）
+- **并发推送保护**：文件锁防止竞态条件
+- **HTTPS**：生产环境使用反向代理（nginx）
+
+### 生产环境部署
+
+生产环境使用 nginx 配置 HTTPS：
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name your-domain.com;
+    
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+    
+    location / {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
 
 ## ⚠️ 重要说明
 
-1. **机器人隐私模式**：必须通过 @BotFather → Bot Settings → Group Privacy → Turn off 禁用
-2. **需要重新添加**：隐私设置变更后，机器人必须从群组移除后重新添加
-3. **机器人消息排除**：机器人自己发送的消息不会触发 Webhook（Telegram 设计）
-4. **localtunnel URL 会变**：每次重启生成新 URL，需重新运行 `setup-webhook.sh`
-5. **零大模型调用**：纯系统级自动化，不使用任何 AI/LLM
+1. **Webhook URL**：配置交易系统发送到 `http://<server-ip>:8080/`
+2. **签名**：使用 `WEBHOOK_SECRET` 进行 payload 验证（推荐）
+3. **Git 远程**：确保配置了 git remote 以启用自动推送
+4. **零大模型调用**：纯系统级自动化，不使用任何 AI/LLM
+5. **双分支**：Telegram 群组是可选的，用于人工监控
 
 ## 🆘 故障排查
 
 ```bash
-# 检查 Webhook 服务器
-systemctl status telegram-webhook
+# 检查服务
+systemctl status trading-webhook
 
 # 查看最近错误
 tail -50 webhook.log
@@ -336,11 +612,18 @@ tail -50 webhook.log
 # 测试健康检查端点
 curl http://localhost:8080/health
 
-# 检查隧道状态
-cat .tunnel_pid 2>/dev/null && ps aux | grep lt
+# 检查 git 配置
+cd /root/.openclaw/workspace/trading-logs
+git remote -v
+git status
 
-# 重新配置 Webhook
-./setup-webhook.sh
+# 重启服务
+systemctl restart trading-webhook
+
+# 手动测试
+curl -X POST http://localhost:8080/ \
+  -H "Content-Type: application/json" \
+  -d '{"action":"test"}'
 ```
 
 ## 📞 支持
