@@ -308,9 +308,9 @@ curl -X POST http://localhost:8080/ \
 
 [🇺🇸 Switch to English](#trading-logs---automated-evidence-system) | [📊 查看 GitHub 仓库](https://github.com/deeptradings/autotrading)
 
-![状态](https://img.shields.io/badge/状态 - 运行中-success)
-![许可](https://img.shields.io/badge/许可-MIT-blue)
-![自动同步](https://img.shields.io/badge/自动同步 - 已启用-brightgreen)
+![Status](https://img.shields.io/badge/Status-Active-success)
+![License](https://img.shields.io/badge/License-MIT-blue)
+![Auto Sync](https://img.shields.io/badge/Auto%20Sync-Enabled-brightgreen)
 
 </div>
 
