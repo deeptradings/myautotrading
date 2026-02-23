@@ -24,14 +24,18 @@ fi
 mkdir -p "$LOGS_DIR"
 
 # Get last update offset from state file
+# Use -1 to start from latest if no state file exists
 OFFSET=0
 if [ -f "$STATE_FILE" ]; then
     OFFSET=$(cat "$STATE_FILE")
+else
+    # First run: start from latest messages
+    OFFSET=-1
 fi
 
 # Fetch updates from Telegram Bot API
-# Note: For groups, we need to fetch all updates and filter by chat_id
-RESPONSE=$(curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates?offset=${OFFSET}&limit=10")
+# For supergroups, we need to use getUpdates with proper offset
+RESPONSE=$(curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates?offset=${OFFSET}&limit=10&allowed_updates=[\"message\"]")
 
 # Extract updates
 UPDATES=$(echo "$RESPONSE" | jq -r '.result[]?')
