@@ -8,3 +8,6 @@ OPEN BTC/USDT LONG @ 52340.5 qty: 0.1
 # Raw: {"action": "open", "symbol": "BTC/USDT", "side": "long", "price": 52340.5, "quantity": 0.1, "order_id": "test123"}
 [2026-02-23 03:55:00] OPEN CROSS BTCUSDT  LONG  Entry: 52340.5  qty: 0.1  leverage: 10x  magin:1200 
 [2026-02-23 04:12:00] CLOSE CROSS  ETHUSDT  SHORT  Exit 52580.0  qty: 0.1  pnl: +23.95 USDT
+[2026-02-23T14:49:27.325597] OPEN ETH/USDT LONG @ 1850.5 qty: 2.0 order_id: test_eth_001
+# Raw: {"action": "open", "symbol": "ETH/USDT", "side": "long", "price": 1850.5, "quantity": 2.0, "order_id": "test_eth_001"}
+
