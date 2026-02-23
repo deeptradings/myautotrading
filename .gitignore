@@ -1,0 +1,4 @@
+.env
+push.log
+*.log
+!logs/.gitkeep
