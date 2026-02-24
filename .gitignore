@@ -1,4 +1,6 @@
 .env
+.env.local
+command_config.json
 push.log
 .telegram_state
 .tunnel_pid
